@@ -496,3 +496,39 @@
         error (err error)
     )
 )
+
+;; ADMIN FUNCTIONS
+
+(define-public (emergency-shutdown)
+    (begin
+        (asserts! (is-eq tx-sender CONTRACT-OWNER) ERR-NOT-AUTHORIZED)
+        ;; Implementation for emergency shutdown
+        (ok true)
+    )
+)
+
+(define-public (update-liquidation-ratio (new-ratio uint))
+    (begin
+        (asserts! (is-eq tx-sender CONTRACT-OWNER) ERR-NOT-AUTHORIZED)
+        (asserts! (and (>= new-ratio u120) (<= new-ratio u200))
+            ERR-INVALID-AMOUNT
+        )
+        ;; Note: In production, this would update a data-var
+        (ok true)
+    )
+)
+
+;; INITIALIZATION
+
+;; Initialize oracle operators (contract owner by default)
+(map-set oracle-operators CONTRACT-OWNER true) 
+;; Initialize basic price feeds (placeholder prices)
+(map-set price-feeds { asset: "STX" } {
+    price: u1000000,
+    timestamp: stacks-block-height,
+    confidence: u95,
+}) (map-set price-feeds { asset: "xBTC" } {
+    price: u100000000000,
+    timestamp: stacks-block-height,
+    confidence: u95,
+})
