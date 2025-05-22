@@ -75,3 +75,78 @@
 (define-data-var total-stx-collateral uint u0)
 (define-data-var total-xbtc-collateral uint u0)
 (define-data-var liquidation-pool uint u0)
+
+;; Authorized liquidators
+(define-map authorized-liquidators
+    principal
+    bool
+)
+
+;; Oracle operators
+(define-map oracle-operators
+    principal
+    bool
+)
+
+;; USDX TOKEN (SIP-010 Implementation)
+
+(define-fungible-token usdx)
+
+(define-data-var token-name (string-ascii 32) "USDx Stablecoin")
+(define-data-var token-symbol (string-ascii 10) "USDx")
+(define-data-var token-uri (optional (string-utf8 256)) none)
+(define-data-var token-decimals uint u6)
+
+;; SIP-010 Standard Functions
+(define-read-only (get-name)
+    (ok (var-get token-name))
+)
+
+(define-read-only (get-symbol)
+    (ok (var-get token-symbol))
+)
+
+(define-read-only (get-decimals)
+    (ok (var-get token-decimals))
+)
+
+(define-read-only (get-balance (who principal))
+    (ok (ft-get-balance usdx who))
+)
+
+(define-read-only (get-total-supply)
+    (ok (ft-get-supply usdx))
+)
+
+(define-read-only (get-token-uri)
+    (ok (var-get token-uri))
+)
+
+(define-public (transfer
+        (amount uint)
+        (from principal)
+        (to principal)
+        (memo (optional (buff 34)))
+    )
+    (begin
+        (asserts! (> amount u0) ERR-INVALID-AMOUNT)
+        (asserts! (or (is-eq from tx-sender) (is-eq from contract-caller))
+            ERR-NOT-AUTHORIZED
+        )
+        (asserts! (not (is-eq from to)) ERR-INVALID-AMOUNT)
+        (ft-transfer? usdx amount from to)
+    )
+)
+
+;; ORACLE FUNCTIONS
+
+(define-public (set-oracle-operator
+        (operator principal)
+        (authorized bool)
+    )
+    (begin
+        (asserts! (is-eq tx-sender CONTRACT-OWNER) ERR-NOT-AUTHORIZED)
+        (asserts! (not (is-eq operator tx-sender)) ERR-INVALID-AMOUNT) ;; Prevent self-modification
+        (ok (map-set oracle-operators operator authorized))
+    )
+)
